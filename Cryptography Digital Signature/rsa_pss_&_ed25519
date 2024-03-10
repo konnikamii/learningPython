@@ -2,8 +2,20 @@ import cryptography.exceptions
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import time
 
 
+def time_function(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"{func.__name__} took {end_time - start_time} seconds to run.")
+        return result
+    return wrapper
+
+
+@time_function
 def use_rsa_pss_digital_signatures():
 
     # RSA-PSS
@@ -17,6 +29,7 @@ def use_rsa_pss_digital_signatures():
     public_key = private_key.public_key()
 
     # Signature creation
+
     message = b'Fundamental Cryptography in Python'
     signature = private_key.sign(message, pss_padding, sha256)
 
@@ -60,6 +73,7 @@ def use_rsa_pss_digital_signatures():
         assert False
 
 
+@time_function
 def use_ed25519_digital_signatures():
 
     # Ed25519
@@ -111,10 +125,19 @@ def use_ed25519_digital_signatures():
         assert False
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    use_rsa_pss_digital_signatures()
-    use_ed25519_digital_signatures()
+    # start_time = time.time()
+    # use_rsa_pss_digital_signatures()
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print(f"The function took {elapsed_time} seconds to run.")
+    # start_time = time.time()
+    # use_ed25519_digital_signatures()
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print(f"The function took {elapsed_time} seconds to run.")
+
 
 use_rsa_pss_digital_signatures()
-# use_ed25519_digital_signatures()
+use_ed25519_digital_signatures()
