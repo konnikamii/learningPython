@@ -1,6 +1,8 @@
 .env
 *.log
 logs/**
+.pem
+.der
 
 venv/
 filesToIgnore/
