@@ -1,10 +1,6 @@
 import pandas as pd
-
-import statsmodels.api as sm
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from statsmodels.graphics.regressionplots import influence_plot
 # All with text
 # df = pd.read_json(f'filesToIgnore/allreviews.json', lines=True)
 # All no text
@@ -58,12 +54,12 @@ print(correlation)
 X = df[['received_for_free']]
 y = df['voted_up']
 
-X = sm.add_constant(X)  # adding a constant
+# X = sm.add_constant(X)  # adding a constant
 
-model = sm.Logit(y, X)
-result = model.fit()
+# model = sm.Logit(y, X)
+# result = model.fit()
 
-print(result.summary())
+# print(result.summary())
 
 # # ------------------------- Time Series -> # of Reviews, Avg Playtime, Voted Up
 # df['timestamp_created'] = pd.to_datetime(df['timestamp_created'])

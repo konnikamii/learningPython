@@ -1,14 +1,7 @@
 # Titles that finished
 from datetime import datetime
 import json
-import random
 import pandas as pd
-import time
-from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium import webdriver
 finished = ["Baldur's Gate 3", "Streets Of Rogue", "Vampire Survivors", "Kenshi", "Subnautica", "Prison Architect", "Darkest Dungeon", "Slay The Spire", "Kerbal Space Program",
             "RimWorld",
             "Hades",
