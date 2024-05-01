@@ -39,7 +39,7 @@ for b in batches:
         game_num += 1
         game_id = id_list[i]
         url = f"https://store.steampowered.com/appreviews/{
-            game_id}?json=1&language={language}&reviews_per_page=5&filter={filters}"
+            game_id}?json=1&language={language}&num_per_page=5&filter={filters}"
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
@@ -70,7 +70,7 @@ for b in batches:
                 for i in range(0, total_requests):
                     iterable += 1
                     url = f"https://store.steampowered.com/appreviews/{
-                        game_id}?json=1&language={language}&reviews_per_page={reviews_per_page}&filter={filters}&cursor={cursor}"
+                        game_id}?json=1&language={language}&num_per_page={reviews_per_page}&filter={filters}&cursor={cursor}"
                     response2 = requests.get(url)
                     print('  ' + f'Game {game_id}.. game {game_num} of {total_games}.. precessed {iterable} out of {
                           total_requests} reviews... Cursor: {cursor}...')
