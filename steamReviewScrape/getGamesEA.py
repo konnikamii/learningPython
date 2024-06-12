@@ -10,18 +10,30 @@ import random
 import json
 
 
-# Create a new instance of the Firefox driver
+# Read Me
+# This code creates a selenium driver and scrapes the steam webpage for game data.
+# The html page is parsed with beautiful soup to extract the necessary data.
+# The page is infinite scroll type and requires a click of a button everytime you reach the end of it.
+# This is where selenium does the work.
+# Once we have loaded the required number of titles in our html we then append them to a json file.
+# The code may not work in its current state based on what the steam web page looks likes and
+# whether any changes were made to the structure of the html and the respective classes of the used elements.
+###
+
+# Create a new instance of the driver
 options = webdriver.ChromeOptions()
 options.add_experimental_option("detach", True)
 options.add_argument("--start-maximized")
 driver = webdriver.Chrome(options=options)
 
+# Set up column titles for the Dataframe
 df = pd.DataFrame(columns=["Title", "Description", "Discount", "Previous Price",
                            "Current Price", "Categories", "Release Date", "Reviews", "Link", "ID"])
 driver.implicitly_wait(10)
 iterable = 0
 iter = 0
 rounds = 0
+# Loop could be used for all batches of games
 for _ in range(0, 1):
     # Go to the page
     if iterable >= 8288:
@@ -42,7 +54,6 @@ for _ in range(0, 1):
     rounds += 1
     print(f'Round {rounds}')
     for i in range(0, 84):
-
         button = driver.find_element(
             By.XPATH, "//button[@tabindex='0' and @class='_3d9cKhzXJMPBYzFkB_IaRp Focusable']")
         if button.text == 'Show more':
@@ -126,12 +137,9 @@ for _ in range(0, 1):
             json.dump(list_of_games, f)
 
     df2 = pd.DataFrame(list_of_games)
-    # newdf = pd.concat([df, df2], ignore_index=True)
     df = pd.concat([df, df2], ignore_index=True)
 
     print(df)
-    # print(newdf)
-# print(df)
 
-# Assuming 'df' is your DataFrame
+# Could be used to import in sql Database
 # df.to_sql('my_table', engine, if_exists='replace')

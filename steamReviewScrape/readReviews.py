@@ -1,58 +1,123 @@
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+# Games
+# ID                        int64
+# Title                    object
+# Description              object
+# Discount                float64
+# Previous Price          float64
+# Current Price           float64
+# Categories               object
+# Release Date             object
+# Review Summary           object
+# Review Number             int64
+# API Review Summary       object
+# API Review Number         int64
+# API Positive Reviews      int64
+# API Negative Reviews      int64
+# Link                     object
+
+# Reviews
+# ID                                      int64
+# Review                                 object
+# Language                               object
+# Playtime at Review                      int64
+# Voted Up                                 bool
+# Steam Purchase                           bool
+# Received for Free                        bool
+# Written During Early Access              bool
+# Timestamp Created              datetime64[ns]
+# Timestamp Updated              datetime64[ns]
+
+def format_time(minutes):
+    # Convert minutes to hours and minutes
+    hours, minutes = divmod(minutes, 60)
+    # Convert hours to days and hours
+    days, hours = divmod(hours, 24)
+    # Return the time in the format '00:00:00'
+    return f'{int(days):02d}:{int(hours):02d}:{int(minutes):02d} (dd:hh:mm)'
 # All with text
 # df = pd.read_json(f'filesToIgnore/allreviews.json', lines=True)
 # All no text
-df = pd.read_json(f'filesToIgnore/allreviews_no_text.json', lines=True)
+# df = pd.read_json(f'filesToIgnore/allreviews_no_text.json', lines=True)
+# df = df.sample(n=10000)
 
-print(df)
-df = df.sample(n=10000)
 
-# # Descriptive Analysis
-# average_playtime = df['playtime_at_review'].mean()
-# positive_review_proportion = df['voted_up'].mean()
-# early_access_review_proportion = df['written_during_early_access'].mean()
+df = pd.read_json(f'reviewsEAsample3.json', lines=True)
+df1 = pd.read_json(f'reviewsBeta.json', lines=True)
 
-# print(f'Average Playtime: {average_playtime}')
-# print(f'Proportion of Positive Reviews: {positive_review_proportion}')
-# print(f'Proportion of Reviews Written During Early Access: {
-#       early_access_review_proportion}')
+# # # # ------------- Summarizing the data ------------- # # # #
+average_playtime_ea = format_time(df['Playtime at Review'].mean())
+positive_review_proportion_ea = df['Voted Up'].mean()
+early_access_review_proportion_ea = df['Written During Early Access'].mean()
+average_playtime_beta = format_time(df1['Playtime at Review'].mean())
+positive_review_proportion_beta = df1['Voted Up'].mean()
+early_access_review_proportion_beta = df1['Written During Early Access'].mean()
+print(f'Average Playtime: EA {
+      average_playtime_ea} vs Beta {average_playtime_beta}')
+print(f'Positive Reviews: EA {
+      round(positive_review_proportion_ea, 4)*100}% vs Beta {round(positive_review_proportion_beta, 4)*100}%')
+print(f'Reviews Written During Early Access: EA {
+      round(early_access_review_proportion_ea, 4)*100}% vs Beta {round(early_access_review_proportion_beta, 4)*100}%')
 
-# received_for_free_counts = df['received_for_free'].value_counts()
-# print('\nReceived for Free Counts:')
-# print(received_for_free_counts)
+received_for_free_counts_ea = df['Received for Free'].value_counts()
+received_for_free_counts_beta = df1['Received for Free'].value_counts()
+prop1 = received_for_free_counts_ea.iloc[1]/received_for_free_counts_ea.iloc[0]
+prop2 = received_for_free_counts_beta.iloc[1] / \
+    received_for_free_counts_beta.iloc[0]
+print(f'Reviews that received the game for Free: EA {
+      round(prop1, 4)*100}% vs Beta {round(prop2, 4)*100}%')
 
+
+df_free_ea = df[df['Received for Free'] == True]
+df_free_beta = df1[df1['Received for Free'] == True]
+df_not_free_ea = df[df['Received for Free'] == False]
+df_not_free_beta = df1[df1['Received for Free'] == False]
+positive_review_proportion_free_ea = df_free_ea['Voted Up'].mean()
+positive_review_proportion_free_beta = df_free_beta['Voted Up'].mean()
+positive_review_proportion_not_free_ea = df_not_free_ea['Voted Up'].mean()
+positive_review_proportion_not_free_beta = df_not_free_beta['Voted Up'].mean()
+print(f'Positive Reviews (Received for Free): EA {round(
+    positive_review_proportion_free_ea, 4)*100}% vs Beta {round(positive_review_proportion_free_beta, 4)*100}%')
+print(f'Positive Reviews (Not Received for Free): EA {round(
+    positive_review_proportion_not_free_ea, 4)*100}% vs Beta {round(positive_review_proportion_not_free_beta, 4)*100}%')
+
+
+sys.exit()
 
 # ------------------------- Received free -> Voted up
 # ------------------------- Logistic regression and correlation
 # Convert boolean columns to integers
-df['voted_up'] = df['voted_up'].astype(int)
-df['received_for_free'] = df['received_for_free'].astype(int)
+df['Voted Up'] = df['Voted Up'].astype(int)
+df['Received for Free'] = df['Received for Free'].astype(int)
 
 # Calculate the percentage of people who voted up for games received for free
-free_games_voted_up = df[df['received_for_free'] == 1]['voted_up'].mean() * 100
+free_games_voted_up = df[df['Received for Free'] == 1]['Voted Up'].mean() * 100
 print(f"Percentage of Voted-Up when received for free: {
       free_games_voted_up}%")
 
 # Calculate the percentage of people who voted up for games not received for free
-paid_games_voted_up = df[df['received_for_free'] == 0]['voted_up'].mean() * 100
+paid_games_voted_up = df[df['Received for Free'] == 0]['Voted Up'].mean() * 100
 print(f"Percentage of Voted-Up when NOT received for free: {
       paid_games_voted_up}%")
 
 # Stacked bar plot
-cross_tab = pd.crosstab(df['received_for_free'], df['voted_up'])
+cross_tab = pd.crosstab(df['Received for Free'], df['Voted Up'])
 cross_tab.plot(kind='bar', stacked=True)
 plt.title('Received for Free vs Voted Up')
 plt.show()
 
 # Correlation
-correlation = df[['received_for_free', 'voted_up']].corr()
+correlation = df[['Received for Free', 'Voted Up']].corr()
 print(correlation)
 
 # Logistic Regression
 X = df[['received_for_free']]
-y = df['voted_up']
+y = df['Voted Up']
 
 # X = sm.add_constant(X)  # adding a constant
 

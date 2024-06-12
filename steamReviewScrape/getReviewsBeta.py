@@ -7,6 +7,21 @@ from urllib.parse import quote
 import math
 import datetime
 
+
+# Read Me
+# This code sends a GET request to the official Steam API that returns a list of objects containing review information.
+# The requests are based on the game ids (previously scraped) and are processed in batches to not freeze the memory.
+# Requests are limited to a random amount of time between .5 to 1 second to not overwhelm the provider.
+# The page is then parsed to extract the necessary data and stored in a json file.
+# A separate txt file is being continuously written with the information to not lose progress in event of a crash.
+# The API works in batches of 200 to maximum 100 entries per request.
+# Once you send a request the API returns a special key which allows you access the following reviews.
+# The key should be included in the next request.
+# The code may not work in its current state based on what the steam API page looks likes and
+# whether any changes were made to its response-request structure.
+###
+
+
 # Setting up the parameters
 language = 'english'
 reviews_per_page = 100
