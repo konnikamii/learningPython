@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.multivariate.manova import MANOVA
 
 
 # Games
@@ -274,6 +277,47 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 # region ANALISYS
 # # # # # # # # # # # # # # # # # # # # # # ANALISYS # # # # # # # # # # # # # # # # # # # # # #
 
+# # MANOVA
+df['Game Type'] = 'EA'
+df1['Game Type'] = 'Beta'
+df.columns = [col.replace(' ', '_') for col in df.columns]
+df1.columns = [col.replace(' ', '_') for col in df1.columns]
+new_df = pd.concat([df, df1])
+new_df['Game_Type'] = new_df['Game_Type'].astype('category')
+manova = MANOVA.from_formula(
+    'Current_Price + Discount + API_Review_Number + Review_Summary_Score ~ Game_Type', data=new_df).mv_test()
+print(manova)
+
+# all p-values < 0.005 therefore there is significant difference between the groups
+# Wilks' lambda: Tests the null hypothesis that the group means are equal. A smaller value indicates more evidence against the null hypothesis.
+# Pillai's trace: A more robust test that is less sensitive to deviations from multivariate normality.
+# Hotelling-Lawley trace: Another test for the multivariate effect.
+# Roy's greatest root: Focuses on the largest eigenvalue of the test matrix and is particularly sensitive to the largest effect.
+
+# # One-Way ANOVAs
+f_val, p_val = stats.f_oneway(df.dropna(subset=['Review Summary Score'])[
+                              'Review Summary Score'], df1.dropna(subset=['Review Summary Score'])['Review Summary Score'])
+print(f"Review Score:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+f_val, p_val = stats.f_oneway(df['Current Price'], df1['Current Price'])
+print(f"Price:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+f_val, p_val = stats.f_oneway(df['Discount'], df1['Discount'])
+print(f"Discount:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+f_val, p_val = stats.f_oneway(
+    df['API Review Number'], df1['API Review Number'])
+print(f"Total Reviews:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+# F-value = ratio of variance btw groups to variance within groups (higher = more difference)
+# p-value < 0.05 => there is significant difference in Review Score, Price, and Total Reviews between EA and Beta games
+# no significant difference was found for the Discount
+
+
 # # T-tests
 t_stat, p_value = stats.ttest_ind(
     df.dropna(subset=['Review Summary Score'])['Review Summary Score'], df1.dropna(subset=['Review Summary Score'])['Review Summary Score'])
@@ -300,28 +344,9 @@ print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 # p-value < 0.05 => there is significant difference in Review Score, Price, and Total Reviews between EA and Beta games
 # no significant difference was found for the Discount
 
-# # One-Way ANOVA
-f_val, p_val = stats.f_oneway(df.dropna(subset=['Review Summary Score'])[
-                              'Review Summary Score'], df1.dropna(subset=['Review Summary Score'])['Review Summary Score'])
-print(f"Review Score:")
-print(f"F-value: {f_val}  |||  P-value: {p_val}")
-
-f_val, p_val = stats.f_oneway(df['Current Price'], df1['Current Price'])
-print(f"Price:")
-print(f"F-value: {f_val}  |||  P-value: {p_val}")
-
-f_val, p_val = stats.f_oneway(df['Discount'], df1['Discount'])
-print(f"Discount:")
-print(f"F-value: {f_val}  |||  P-value: {p_val}")
-
-f_val, p_val = stats.f_oneway(
-    df['API Review Number'], df1['API Review Number'])
-print(f"Total Reviews:")
-print(f"F-value: {f_val}  |||  P-value: {p_val}")
-
-# F-value = ratio of variance btw groups to variance within groups (higher = more difference)
-# p-value < 0.05 => there is significant difference in Review Score, Price, and Total Reviews between EA and Beta games
-# no significant difference was found for the Discount
+# # Regression
+model = smf.ols('Review_Summary_Score ~ Current_Price', data=new_df).fit()
+print(model.summary())
 
 
 # endregion
