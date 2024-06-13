@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 
 import numpy as np
@@ -55,6 +56,12 @@ positive_review_scores = {v: k for k, v in review_scores.items() if v >= -1}
 df = pd.read_json('gamesEAsample2.json', lines=True)
 df1 = pd.read_json('gamesBeta.json', lines=True)
 
+df['Release Date'] = pd.to_datetime(df['Release Date'])
+df1['Release Date'] = pd.to_datetime(df1['Release Date'])
+df['Release Date Epoch'] = (df['Release Date'] -
+                            pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
+df1['Release Date Epoch'] = (df1['Release Date'] -
+                             pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
 
 # # # # ------------- Summarizing the data ------------- # # # #
 # dfSummary = df.describe().drop('ID', axis=1)
@@ -285,7 +292,7 @@ df1.columns = [col.replace(' ', '_') for col in df1.columns]
 new_df = pd.concat([df, df1])
 new_df['Game_Type'] = new_df['Game_Type'].astype('category')
 manova = MANOVA.from_formula(
-    'Current_Price + Discount + API_Review_Number + Review_Summary_Score ~ Game_Type', data=new_df).mv_test()
+    'Current_Price + Discount + API_Review_Number + Review_Summary_Score + Release_Date_Epoch ~ Game_Type', data=new_df).mv_test()
 print(manova)
 
 # all p-values < 0.005 therefore there is significant difference between the groups
@@ -295,22 +302,27 @@ print(manova)
 # Roy's greatest root: Focuses on the largest eigenvalue of the test matrix and is particularly sensitive to the largest effect.
 
 # # One-Way ANOVAs
-f_val, p_val = stats.f_oneway(df.dropna(subset=['Review Summary Score'])[
-                              'Review Summary Score'], df1.dropna(subset=['Review Summary Score'])['Review Summary Score'])
+f_val, p_val = stats.f_oneway(df.dropna(subset=['Review_Summary_Score'])[
+                              'Review_Summary_Score'], df1.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score'])
 print(f"Review Score:")
 print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
-f_val, p_val = stats.f_oneway(df['Current Price'], df1['Current Price'])
+f_val, p_val = stats.f_oneway(df['Current_Price'], df1['Current_Price'])
 print(f"Price:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+f_val, p_val = stats.f_oneway(
+    df['API_Review_Number'], df1['API_Review_Number'])
+print(f"Total Reviews:")
+print(f"F-value: {f_val}  |||  P-value: {p_val}")
+
+f_val, p_val = stats.f_oneway(
+    df['Release_Date_Epoch'], df1['Release_Date_Epoch'])
+print(f"Release Date:")
 print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
 f_val, p_val = stats.f_oneway(df['Discount'], df1['Discount'])
 print(f"Discount:")
-print(f"F-value: {f_val}  |||  P-value: {p_val}")
-
-f_val, p_val = stats.f_oneway(
-    df['API Review Number'], df1['API Review Number'])
-print(f"Total Reviews:")
 print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
 # F-value = ratio of variance btw groups to variance within groups (higher = more difference)
@@ -320,13 +332,23 @@ print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
 # # T-tests
 t_stat, p_value = stats.ttest_ind(
-    df.dropna(subset=['Review Summary Score'])['Review Summary Score'], df1.dropna(subset=['Review Summary Score'])['Review Summary Score'])
+    df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score'], df1.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score'])
 print(f"Review Score:")
 print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 
 t_stat, p_value = stats.ttest_ind(
-    df['Current Price'], df1['Current Price'])
+    df['Current_Price'], df1['Current_Price'])
 print(f"Price:")
+print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
+
+t_stat, p_value = stats.ttest_ind(
+    df['API_Review_Number'], df1['API_Review_Number'])
+print(f"Total Reviews:")
+print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
+
+t_stat, p_value = stats.ttest_ind(
+    df['Release_Date_Epoch'], df1['Release_Date_Epoch'])
+print(f"Release Date:")
 print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 
 t_stat, p_value = stats.ttest_ind(
@@ -334,19 +356,40 @@ t_stat, p_value = stats.ttest_ind(
 print(f"Discount:")
 print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 
-t_stat, p_value = stats.ttest_ind(
-    df['API Review Number'], df1['API Review Number'])
-print(f"Total Reviews:")
-print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
-
-
 # t-stat = size of difference relative to variation in data (higher = more difference)
 # p-value < 0.05 => there is significant difference in Review Score, Price, and Total Reviews between EA and Beta games
 # no significant difference was found for the Discount
 
 # # Regression
-model = smf.ols('Review_Summary_Score ~ Current_Price', data=new_df).fit()
+new_df['Game_Type_Numeric'] = new_df['Game_Type'].map({'EA': 0, 'Beta': 1})
+X = sm.add_constant(new_df['Game_Type_Numeric'])
+
+dependent_vars = ['Current_Price', 'API_Review_Number',
+                  'Review_Summary_Score', 'Release_Date_Epoch', 'Discount']
+
+Y = new_df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
+model = sm.OLS(Y, sm.add_constant(
+    new_df.dropna(subset=['Review_Summary_Score'])['Game_Type_Numeric'])).fit()
+print(f"Review Score:")
 print(model.summary())
 
+Y = new_df['Current_Price']
+model = sm.OLS(Y, X).fit()
+print(f"Price:")
+print(model.summary())
 
+Y = new_df['API_Review_Number']
+model = sm.OLS(Y, X).fit()
+print(f"Total Reviews:")
+print(model.summary())
+
+Y = new_df['Release_Date_Epoch']
+model = sm.OLS(Y, X).fit()
+print(f"Release Date:")
+print(model.summary())
+
+Y = new_df['Discount']
+model = sm.OLS(Y, X).fit()
+print(f"Discount:")
+print(model.summary())
 # endregion
