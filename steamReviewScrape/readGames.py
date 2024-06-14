@@ -62,6 +62,10 @@ df['Release Date Epoch'] = (df['Release Date'] -
                             pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
 df1['Release Date Epoch'] = (df1['Release Date'] -
                              pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
+df['Game Type'] = 'EA'
+df1['Game Type'] = 'Beta'
+df['Game Type Numeric'] = df['Game Type'].map({'EA': 0, 'Beta': 1})
+df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 
 # # # # ------------- Summarizing the data ------------- # # # #
 # dfSummary = df.describe().drop('ID', axis=1)
@@ -285,8 +289,6 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 # # # # # # # # # # # # # # # # # # # # # # ANALISYS # # # # # # # # # # # # # # # # # # # # # #
 
 # # MANOVA
-df['Game Type'] = 'EA'
-df1['Game Type'] = 'Beta'
 df.columns = [col.replace(' ', '_') for col in df.columns]
 df1.columns = [col.replace(' ', '_') for col in df1.columns]
 new_df = pd.concat([df, df1])
@@ -360,8 +362,17 @@ print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 # p-value < 0.05 => there is significant difference in Review Score, Price, and Total Reviews between EA and Beta games
 # no significant difference was found for the Discount
 
+# # Correlation Matrix EA/Beta
+variables = ['Game_Type_Numeric', 'Current_Price', 'API_Review_Number',
+             'Review_Summary_Score', 'Release_Date_Epoch', 'Discount']
+df_subset = new_df[variables]
+correlation_matrix = df_subset.corr()
+print(correlation_matrix)
+
+# we observe stronger positive colleration in Game Type and Review Score also (Price and Review Number) and negative cor. with Release Date
+# in between the other DVs we see positive correlation between Price and Review Number/Score lets continue with Regression
+
 # # Regression
-new_df['Game_Type_Numeric'] = new_df['Game_Type'].map({'EA': 0, 'Beta': 1})
 X = sm.add_constant(new_df['Game_Type_Numeric'])
 
 dependent_vars = ['Current_Price', 'API_Review_Number',
@@ -392,4 +403,32 @@ Y = new_df['Discount']
 model = sm.OLS(Y, X).fit()
 print(f"Discount:")
 print(model.summary())
+
+# Interaction events:
+# Review Score - 2.2        p<0.05
+# Price - 12.9              p<0.05
+# Total Reviews - 84,130    p<0.05
+# Release Date - -788       p<0.05
+# Discount - 0.05           p>0.05
+
+
+# # Multiple Linear Regression
+X = sm.add_constant(new_df.dropna(subset=['Review_Summary_Score'])[
+                    ['API_Review_Number', 'Current_Price', 'Release_Date_Epoch', 'Discount']])
+dependent_vars = ['Current_Price', 'API_Review_Number',
+                  'Review_Summary_Score', 'Release_Date_Epoch', 'Discount']
+
+Y = new_df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
+
+# Interaction events:
+# Total Reviews - 0.000004  p<0.05
+# Price - 0.04              p<0.05
+# Release Date - -0.00003   p>0.05
+# Discount - 0.75           p>0.05
+
+
 # endregion
