@@ -53,49 +53,60 @@ review_scores = {
 }
 review_scores_labels = {v: k for k, v in review_scores.items()}
 positive_review_scores = {v: k for k, v in review_scores.items() if v >= -1}
+df_ea_full = pd.read_json('gamesEA.json', lines=True)
 df = pd.read_json('gamesEAsample2.json', lines=True)
 df1 = pd.read_json('gamesBeta.json', lines=True)
 
-df['Release Date'] = pd.to_datetime(df['Release Date'])
-df1['Release Date'] = pd.to_datetime(df1['Release Date'])
-df['Release Date Epoch'] = (df['Release Date'] -
+df_ea_full.columns = [col.replace(' ', '_') for col in df_ea_full.columns]
+df.columns = [col.replace(' ', '_') for col in df.columns]
+df1.columns = [col.replace(' ', '_') for col in df1.columns]
+df_ea_full['Release_Date'] = pd.to_datetime(df_ea_full['Release_Date'])
+df['Release_Date'] = pd.to_datetime(df['Release_Date'])
+df1['Release_Date'] = pd.to_datetime(df1['Release_Date'])
+df_ea_full['Release_Date_Epoch'] = (df_ea_full['Release_Date'] -
+                                    pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
+df['Release_Date_Epoch'] = (df['Release_Date'] -
                             pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
-df1['Release Date Epoch'] = (df1['Release Date'] -
+df1['Release_Date_Epoch'] = (df1['Release_Date'] -
                              pd.Timestamp('1970-01-01')) / pd.Timedelta('1D')
-df['Game Type'] = 'EA'
-df1['Game Type'] = 'Beta'
-df['Game Type Numeric'] = df['Game Type'].map({'EA': 0, 'Beta': 1})
-df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
+df_ea_full['Game_Type'] = 'EA'
+df['Game_Type'] = 'EA'
+df1['Game_Type'] = 'Beta'
+df_ea_full['Game_Type_Numeric'] = df_ea_full['Game_Type'].map(
+    {'EA': 0, 'Beta': 1})
+df['Game_Type_Numeric'] = df['Game_Type'].map({'EA': 0, 'Beta': 1})
+df1['Game_Type_Numeric'] = df1['Game_Type'].map({'EA': 0, 'Beta': 1})
 
 # # # # ------------- Summarizing the data ------------- # # # #
-# dfSummary = df.describe().drop('ID', axis=1)
-# df1Summary = df1.describe().drop('ID', axis=1)
-# print(df.columns)
-# print(df1Summary)
-# # Conclusions
-# # EA games are :
-# # -cheaper (avg $8-$10) vs (avg $20)
-# # -have lower score (avg 1-1.5) vs (avg 3.4)
-# # -have less reviews (avg 50-2000) vs (avg 84,000)
-# # -ratio positive/negative reviews is worse in most cases (outlier in sample 2)
-# # -Still we have to test with ANOVA if differences are significant
-# all_categories_ea = df['Categories'].explode()
-# top_10_categoriess_ea = all_categories_ea.value_counts().head(10)
-# print(top_10_categoriess_ea)
-# all_categories_beta = df1['Categories'].explode()
-# top_10_categoriess_beta = all_categories_beta.value_counts().head(10)
-# print(top_10_categoriess_beta)
-# # -250 different categories
-# # -top 10 EA -> Early Access, Singleplayer, Action, Indie, 2D, Adventure, Simulation, Casual, Strategy, 3D
-# # -top 10 Beta -> Indie, Action, Simulation, Adventure, Strategy, RPG, Casual, Massively Multiplayer, Free to Play, Sports
-# # -maybe EA should focus more on Indie and Multiplayer games rather than Singleplayer
-
+dfSummary = df.describe().drop(
+    ['ID', 'Release_Date', 'Game_Type_Numeric'], axis=1)
+df1Summary = df1.describe().drop(
+    ['ID', 'Release_Date', 'Game_Type_Numeric'], axis=1)
+print(dfSummary)
+print(df1Summary)
+# Conclusions
+# EA games are :
+# -cheaper (avg $8-$10) vs (avg $20)
+# -have lower score (avg 1-1.5) vs (avg 3.4)
+# -have less reviews (avg 50-2000) vs (avg 84,000)
+# -ratio positive/negative reviews is worse in most cases (outlier in sample 2)
+# -Still we have to test with ANOVA if differences are significant
+all_categories_ea = df['Categories'].explode()
+top_10_categoriess_ea = all_categories_ea.value_counts().head(10)
+print(top_10_categoriess_ea)
+all_categories_beta = df1['Categories'].explode()
+top_10_categoriess_beta = all_categories_beta.value_counts().head(10)
+print(top_10_categoriess_beta)
+# -250 different categories
+# -top 10 EA -> Early Access, Singleplayer, Action, Indie, 2D, Adventure, Simulation, Casual, Strategy, 3D
+# -top 10 Beta -> Indie, Action, Simulation, Adventure, Strategy, RPG, Casual, Massively Multiplayer, Free to Play, Sports
+# -maybe EA should focus more on Indie and Multiplayer games rather than Singleplayer
 
 # region PLOTS
 # # # # # # # # # # # # # # # # # # # # # # PLOTS # # # # # # # # # # # # # # # # # # # # # #
 # # # # ------------- Price ------------- # # # #
 # # Box plot
-# df_prices = pd.concat([df['Current Price'], df1['Current Price']], axis=1)
+# df_prices = pd.concat([df['Current_Price'], df1['Current_Price']], axis=1)
 # df_prices.columns = ['EA', 'Beta']
 # df_prices.plot.box(figsize=(7, 5))
 # plt.title('Price Comparison')
@@ -105,7 +116,7 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 # # # # ------------- Reviews ------------- # # # #
 # # Box plot total reviews
 # df_total_reviews = pd.concat(
-#     [df['API Review Number'], df1['API Review Number']], axis=1)
+#     [df['API_Review_Number'], df1['API_Review_Number']], axis=1)
 # df_total_reviews.columns = ['EA', 'Beta']
 # df_total_reviews.plot.box(figsize=(7, 5))
 # plt.title('Total Reviews Comparison')
@@ -114,9 +125,9 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 # # Box plot positive/negative reviews EA vs Beta
 # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(14, 5))
 # df_review_sentiment_ea = pd.concat(
-#     [df['API Positive Reviews'], df['API Negative Reviews']], axis=1)
+#     [df['API_Positive_Reviews'], df['API_Negative_Reviews']], axis=1)
 # df_review_sentiment_ea.columns = [
-#     'Positive Reviews', 'Negative Reviews']
+#     'Positive_Reviews', 'Negative_Reviews']
 # Q1_ea = df_review_sentiment_ea.quantile(0.25)
 # Q3_ea = df_review_sentiment_ea.quantile(0.75)
 # IQR_ea = Q3_ea - Q1_ea
@@ -128,9 +139,9 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 # # plt.show()
 
 # df_review_sentiment_beta = pd.concat(
-#     [df1['API Positive Reviews'], df1['API Negative Reviews']], axis=1)
+#     [df1['API_Positive_Reviews'], df1['API_Negative_Reviews']], axis=1)
 # df_review_sentiment_beta.columns = [
-#     'Positive Reviews', 'Negative Reviews']
+#     'Positive_Reviews', 'Negative_Reviews']
 # Q1_beta = df_review_sentiment_beta.quantile(0.25)
 # Q3_beta = df_review_sentiment_beta.quantile(0.75)
 # IQR_beta = Q3_beta - Q1_beta
@@ -141,7 +152,7 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 # # plt.title('Reviews Beta')
 # # plt.show()
 
-# # Multiplot
+# # # Multiplot
 # df_review_sentiment_ea.plot.box(ax=axes[0])
 # axes[0].set_title('Reviews EA')
 # df_review_sentiment_beta.plot.box(ax=axes[1])
@@ -152,10 +163,10 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 
 # # # # ------------- Review Score ------------- # # # #
 # # Box plot
-# null_counts_ea = df['Review Summary Score'].isnull().sum()
-# null_counts_beta = df1['Review Summary Score'].isnull().sum()
+# null_counts_ea = df['Review_Summary_Score'].isnull().sum()
+# null_counts_beta = df1['Review_Summary_Score'].isnull().sum()
 # df_review_score = pd.concat(
-#     [df['Review Summary Score'], df1['Review Summary Score']], axis=1)
+#     [df['Review_Summary_Score'], df1['Review_Summary_Score']], axis=1)
 # df_review_score.columns = [
 #     f'EA ({null_counts_ea} null)', f'Beta ({null_counts_beta} null)']
 # df_review_score.plot.box(figsize=(7, 5))
@@ -164,26 +175,26 @@ df1['Game Type Numeric'] = df1['Game Type'].map({'EA': 0, 'Beta': 1})
 
 
 # # # # ------------- Realease Date ------------- # # # #
-# df['Release Date'] = pd.to_datetime(df['Release Date'])
-# df1['Release Date'] = pd.to_datetime(df1['Release Date'])
-# fig, ax = plt.subplots(figsize=(10, 6))
+df['Release_Date'] = pd.to_datetime(df['Release_Date'])
+df1['Release_Date'] = pd.to_datetime(df1['Release_Date'])
+fig, ax = plt.subplots(figsize=(10, 6))
 
 # # Histogram
-# # df['Release Date'].hist(ax=ax, bins=30, alpha=0.5, label='Early Access')
-# # df1['Release Date'].hist(ax=ax, bins=30, alpha=0.5, label='Beta')
+df['Release_Date'].hist(ax=ax, bins=30, alpha=0.5, label='Early Access')
+df1['Release_Date'].hist(ax=ax, bins=30, alpha=0.5, label='Beta')
 
 # # Line chart
-# df_yearly = df['Release Date'].groupby(df['Release Date'].dt.year).count()
-# df1_yearly = df1['Release Date'].groupby(df1['Release Date'].dt.year).count()
+# df_yearly = df['Release_Date'].groupby(df['Release_Date'].dt.year).count()
+# df1_yearly = df1['Release_Date'].groupby(df1['Release_Date'].dt.year).count()
 # df_yearly.plot(ax=ax, label='Early Access')
 # df1_yearly.plot(ax=ax, label='Beta')
 
 # # Set the title and labels
-# ax.set_title('Histogram of Release Dates')
-# ax.set_xlabel('Release Date')
-# ax.set_ylabel('Frequency')
-# ax.legend()
-# plt.show()
+ax.set_title('Histogram of Release Dates')
+ax.set_xlabel('Release Date')
+ax.set_ylabel('Frequency')
+ax.legend()
+plt.show()
 
 # -trend shows that the number of Beta games decline in last years while EA games are increasing especially last 2 years
 
@@ -195,7 +206,7 @@ df1_exploded = df1.explode('Categories')
 selected_categories = df1_exploded['Categories'].unique().tolist()
 df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
-# # # Count barchart
+# # # # Count barchart
 # ea_category_counts = df_exploded['Categories'].value_counts()
 # beta_category_counts = df1_exploded['Categories'].value_counts()
 # category_counts = pd.DataFrame(
@@ -211,9 +222,9 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
 # # Total Reviews barchart -- a bit useless
 # ea_category_reviews = df_exploded.groupby(
-#     'Categories')['API Review Number'].mean()
+#     'Categories')['API_Review_Number'].mean()
 # beta_category_reviews = df1_exploded.groupby(
-#     'Categories')['API Review Number'].mean()
+#     'Categories')['API_Review_Number'].mean()
 # category_data = pd.DataFrame(
 #     {'Early Access': ea_category_reviews, 'Beta': beta_category_reviews}).sort_values(by=['Beta', 'Early Access'])
 # category_data.plot(kind='barh', figsize=(10, 6))
@@ -225,9 +236,9 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
 # # Price barchart
 # ea_category_price = df_exploded.groupby(
-#     'Categories')['Current Price'].mean()
+#     'Categories')['Current_Price'].mean()
 # beta_category_price = df1_exploded.groupby(
-#     'Categories')['Current Price'].mean()
+#     'Categories')['Current_Price'].mean()
 # category_data = pd.DataFrame(
 #     {'Early Access': ea_category_price, 'Beta': beta_category_price}).sort_values(by=['Beta', 'Early Access'])
 # category_data.plot(kind='barh', figsize=(10, 6))
@@ -238,9 +249,9 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
 # # Review Score barchart
 # ea_category_review_scores = df_exploded.groupby(
-#     'Categories')['Review Summary Score'].mean()
+#     'Categories')['Review_Summary_Score'].mean()
 # beta_category_review_scores = df1_exploded.groupby(
-#     'Categories')['Review Summary Score'].mean()
+#     'Categories')['Review_Summary_Score'].mean()
 # category_data = pd.DataFrame(
 #     {'Early Access': ea_category_review_scores, 'Beta': beta_category_review_scores}).sort_values(by=['Beta', 'Early Access'])
 # category_data.plot(kind='barh', figsize=(10, 6))
@@ -256,7 +267,7 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
 # # Review Score crosstab EA
 # ea_cross_counts = pd.crosstab(
-#     df_exploded['Categories'], df_exploded['Review Summary'])
+#     df_exploded['Categories'], df_exploded['Review_Summary'])
 # ea_cross_counts['Total'] = ea_cross_counts.sum(axis=1)
 # ea_cross_counts = ea_cross_counts.sort_values(
 #     by='Total', ascending=False).drop(columns='Total')
@@ -269,7 +280,7 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 
 # # Review Score crosstab Beta
 # beta_cross_counts = pd.crosstab(
-#     df1_exploded['Categories'], df1_exploded['Review Summary'])
+#     df1_exploded['Categories'], df1_exploded['Review_Summary'])
 # beta_cross_counts['Total'] = beta_cross_counts.sum(axis=1)
 # beta_cross_counts = beta_cross_counts.sort_values(
 #     by='Total', ascending=False).drop(columns='Total')
@@ -289,8 +300,6 @@ df_exploded = df_exploded[df_exploded['Categories'].isin(selected_categories)]
 # # # # # # # # # # # # # # # # # # # # # # ANALISYS # # # # # # # # # # # # # # # # # # # # # #
 
 # # MANOVA
-df.columns = [col.replace(' ', '_') for col in df.columns]
-df1.columns = [col.replace(' ', '_') for col in df1.columns]
 new_df = pd.concat([df, df1])
 new_df['Game_Type'] = new_df['Game_Type'].astype('category')
 manova = MANOVA.from_formula(
@@ -368,7 +377,6 @@ variables = ['Game_Type_Numeric', 'Current_Price', 'API_Review_Number',
 df_subset = new_df[variables]
 correlation_matrix = df_subset.corr()
 print(correlation_matrix)
-
 # we observe stronger positive colleration in Game Type and Review Score also (Price and Review Number) and negative cor. with Release Date
 # in between the other DVs we see positive correlation between Price and Review Number/Score lets continue with Regression
 
@@ -413,22 +421,51 @@ print(model.summary())
 
 
 # # Multiple Linear Regression
+independent_vars = ['Current_Price', 'API_Review_Number',
+                    'Release_Date_Epoch', 'Discount']
+dependent_var = 'Review_Summary_Score'
+
 X = sm.add_constant(new_df.dropna(subset=['Review_Summary_Score'])[
                     ['API_Review_Number', 'Current_Price', 'Release_Date_Epoch', 'Discount']])
-dependent_vars = ['Current_Price', 'API_Review_Number',
-                  'Review_Summary_Score', 'Release_Date_Epoch', 'Discount']
-
 Y = new_df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
 model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
 
+X = sm.add_constant(df_ea_full.dropna(subset=['Review_Summary_Score'])[
+                    ['API_Review_Number', 'Release_Date_Epoch']])
+Y = df_ea_full.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
+X = sm.add_constant(df.dropna(subset=['Review_Summary_Score'])[
+                    ['API_Review_Number', 'Release_Date_Epoch']])
+Y = df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
+X = sm.add_constant(df1.dropna(subset=['Review_Summary_Score'])[
+                    ['API_Review_Number', 'Release_Date_Epoch']])
+Y = df1.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
 
 # Interaction events:
+# Both Sets
 # Total Reviews - 0.000004  p<0.05
 # Price - 0.04              p<0.05
 # Release Date - -0.00003   p>0.05
 # Discount - 0.75           p>0.05
+# Full EA Set
+# Total Reviews - 0.00002  p<0.05
+# Release Date - 0.0004   p<0.05
+# EA Set
+# Total Reviews - 0.0028  p<0.05
+# Release Date - 0.0006   p<0.05
+# Beta Set - no significant effects
 
 
 # endregion

@@ -51,20 +51,29 @@ def format_time(minutes):
 # df = df.sample(n=10000)
 
 
+# change later
+df_ea_full = pd.read_json(f'reviewsEA.json', lines=True)
 df = pd.read_json(f'reviewsEAsample3.json', lines=True)
 df1 = pd.read_json(f'reviewsBeta.json', lines=True)
+df_ea_full.columns = [col.replace(' ', '_') for col in df_ea_full.columns]
 df.columns = [col.replace(' ', '_') for col in df.columns]
 df1.columns = [col.replace(' ', '_') for col in df1.columns]
 df['Game_Type'] = 'EA'
 df1['Game_Type'] = 'Beta'
 df['Game_Type_Numeric'] = df['Game_Type'].map({'EA': 0, 'Beta': 1})
 df1['Game_Type_Numeric'] = df1['Game_Type'].map({'EA': 0, 'Beta': 1})
+df_ea_full['Voted_Up_Numeric'] = df_ea_full['Voted_Up'].map(
+    {False: 0, True: 1})
 df['Voted_Up_Numeric'] = df['Voted_Up'].map({False: 0, True: 1})
 df1['Voted_Up_Numeric'] = df1['Voted_Up'].map({False: 0, True: 1})
+df_ea_full['Received_for_Free_Numeric'] = df_ea_full['Received_for_Free'].map(
+    {False: 0, True: 1})
 df['Received_for_Free_Numeric'] = df['Received_for_Free'].map(
     {False: 0, True: 1})
 df1['Received_for_Free_Numeric'] = df1['Received_for_Free'].map({
                                                                 False: 0, True: 1})
+df_ea_full['Written_During_Early_Access_Numeric'] = df_ea_full['Written_During_Early_Access'].map({
+    False: 0, True: 1})
 df['Written_During_Early_Access_Numeric'] = df['Written_During_Early_Access'].map({
                                                                                   False: 0, True: 1})
 df1['Written_During_Early_Access_Numeric'] = df1['Written_During_Early_Access'].map({
@@ -113,7 +122,7 @@ print(f'Positive Reviews (Not Received for Free): EA {round(
 
 # # MANOVA
 manova = MANOVA.from_formula(
-    ' Received_for_Free + Playtime_at_Review ~ Game_Type', data=new_df).mv_test()
+    ' Received_for_Free_Numeric + Playtime_at_Review ~ Game_Type_Numeric', data=new_df).mv_test()
 print(manova)
 
 # all p-values < 0.005 therefore there is significant difference between the groups
@@ -122,7 +131,6 @@ print(manova)
 # Hotelling-Lawley trace: Another test for the multivariate effect.
 # Roy's greatest root: Focuses on the largest eigenvalue of the test matrix and is particularly sensitive to the largest effect.
 
-
 # # One-Way ANOVAs
 f_val, p_val = stats.f_oneway(
     df['Playtime_at_Review'], df1['Playtime_at_Review'])
@@ -130,7 +138,7 @@ print(f"Playtime:")
 print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
 f_val, p_val = stats.f_oneway(
-    df['Received_for_Free'], df1['Received_for_Free'])
+    df['Received_for_Free_Numeric'], df1['Received_for_Free_Numeric'])
 print(f"Received for Free:")
 print(f"F-value: {f_val}  |||  P-value: {p_val}")
 
@@ -146,7 +154,7 @@ print(f"Playtime:")
 print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 
 t_stat, p_value = stats.ttest_ind(
-    df['Received_for_Free'], df1['Received_for_Free'])
+    df['Received_for_Free_Numeric'], df1['Received_for_Free_Numeric'])
 print(f"Received for Free:")
 print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 # t-stat = size of difference relative to variation in data (higher = more difference)
@@ -154,7 +162,8 @@ print(f"T-statistic: {t_stat}  |||  P-value: {p_value}")
 
 
 # # Correlation Matrix EA/Beta
-variables = ['Game_Type_Numeric', 'Playtime_at_Review', 'Received_for_Free']
+variables = ['Game_Type_Numeric',
+             'Playtime_at_Review', 'Received_for_Free_Numeric']
 df_subset = new_df[variables]
 correlation_matrix = df_subset.corr()
 print(correlation_matrix)
@@ -163,14 +172,14 @@ print(correlation_matrix)
 # # Regression
 X = sm.add_constant(new_df['Game_Type_Numeric'])
 
-dependent_vars = ['Playtime_at_Review', 'Received_for_Free']
+dependent_vars = ['Playtime_at_Review', 'Received_for_Free_Numeric']
 
 Y = new_df['Playtime_at_Review']
 model = sm.OLS(Y, X).fit()
 print(f"Playtime:")
 print(model.summary())
 
-Y = new_df['Received_for_Free']
+Y = new_df['Received_for_Free_Numeric']
 model = sm.OLS(Y, X).fit()
 print(f"Received for Free:")
 print(model.summary())
@@ -181,99 +190,91 @@ print(model.summary())
 
 
 # # Multiple Linear Regression
+independent_vars = ['Playtime_at_Review',
+                    'Received_for_Free_Numeric', 'Written_During_Early_Access_Numeric']
+dependent_var = ['Voted_Up_Numeric']
+
 X = sm.add_constant(new_df.dropna(subset=['Voted_Up_Numeric'])[
                     ['Playtime_at_Review', 'Received_for_Free_Numeric', 'Written_During_Early_Access_Numeric']])
-dependent_vars = ['Voted_Up_Numeric', 'Playtime_at_Review',
-                  'Received_for_Free_Numeric', 'Written_During_Early_Access_Numeric']
-
 Y = new_df.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
 model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
 
+X = sm.add_constant(df_ea_full.dropna(subset=['Voted_Up_Numeric'])[
+                    ['Playtime_at_Review', 'Received_for_Free_Numeric']])
+Y = df_ea_full.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
+X = sm.add_constant(df.dropna(subset=['Voted_Up_Numeric'])[
+                    ['Playtime_at_Review', 'Received_for_Free_Numeric']])
+Y = df.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
+X = sm.add_constant(df1.dropna(subset=['Voted_Up_Numeric'])[
+                    ['Playtime_at_Review', 'Received_for_Free_Numeric', 'Written_During_Early_Access_Numeric']])
+Y = df1.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+model = sm.OLS(Y, X).fit()
+print(f"Review Score:")
+print(model.summary())
+
 # Interaction events:
+# Both Sets
 # Playtime - 0.00000007          p<0.05
 # Received for Free - 0.04       p<0.05
 # Written during EA - -0.06      p<0.05
+# Full EA Set
+# Playtime - 0.00000008          p<0.05
+# Received for Free - 0.04       p<0.05
+# EA Set
+# Playtime - 0.000004            p<0.05
+# Beta Set
+# Playtime - 0.00000009           p<0.05
+# Received for Free - 0.034       p<0.05
+# Written during EA - not significant
 
-sys.exit()
-
-# ------------------------- Received free -> Voted up
-# ------------------------- Logistic regression and correlation
-# Convert boolean columns to integers
-df['Voted Up'] = df['Voted Up'].astype(int)
-df['Received for Free'] = df['Received for Free'].astype(int)
-
-# Calculate the percentage of people who voted up for games received for free
-free_games_voted_up = df[df['Received for Free']
-                         == 1]['Voted Up'].mean() * 100
-print(f"Percentage of Voted-Up when received for free: {
-    free_games_voted_up}%")
-
-# Calculate the percentage of people who voted up for games not received for free
-paid_games_voted_up = df[df['Received for Free']
-                         == 0]['Voted Up'].mean() * 100
-print(f"Percentage of Voted-Up when NOT received for free: {
-    paid_games_voted_up}%")
-
-# Stacked bar plot
-cross_tab = pd.crosstab(df['Received for Free'], df['Voted Up'])
-cross_tab.plot(kind='bar', stacked=True)
-plt.title('Received for Free vs Voted Up')
-plt.show()
-
-# Correlation
-correlation = df[['Received for Free', 'Voted Up']].corr()
-print(correlation)
-
-# Logistic Regression
-X = df[['received_for_free']]
-y = df['Voted Up']
-
-# X = sm.add_constant(X)  # adding a constant
-
-# model = sm.Logit(y, X)
-# result = model.fit()
-
-# print(result.summary())
 
 # # ------------------------- Time Series -> # of Reviews, Avg Playtime, Voted Up
-# df['timestamp_created'] = pd.to_datetime(df['timestamp_created'])
-# df.set_index('timestamp_created', inplace=True)
+df['Timestamp_Created'] = pd.to_datetime(df['Timestamp_Created'])
+df.set_index('Timestamp_Created', inplace=True)
 
-# # Time series plot for the number of reviews
-# df.resample('ME').size().plot()
-# plt.title('Number of Reviews Over Time')
-# plt.show()
+# Time series plot for the number of reviews
+df.resample('ME').size().plot()
+plt.title('Number of Reviews Over Time')
+plt.show()
 
 # # Time series plot for the average playtime at review
-# df.resample('ME')['playtime_at_review'].mean().plot()
-# plt.title('Average Playtime at Review Over Time')
-# plt.show()
+df.resample('ME')['Playtime_at_Review'].mean().plot()
+plt.title('Average Playtime at Review Over Time')
+plt.show()
 
 # # Time series plot for the proportion of reviews voted up
-# df.resample('ME')['voted_up'].mean().plot()
-# plt.title('Proportion of Reviews Voted Up Over Time')
-# plt.show()
+df.resample('ME')['Voted_Up'].mean().plot()
+plt.title('Proportion of Reviews Voted Up Over Time')
+plt.show()
 
 # # ------------------------- Play Time -> # of Reviews, Voted Up
 # # Define the bin edges
-# bins = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000,
-#         8000, 9000, 10000, df['playtime_at_review'].max()]
+bins = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000,
+        8000, 9000, 10000, df['Playtime_at_Review'].max()]
 
 # # Create the bins
-# df['playtime_bins'] = pd.cut(
-#     df['playtime_at_review'], bins, include_lowest=True)
+df['Playtime_Bins'] = pd.cut(
+    df['Playtime_at_Review'], bins, include_lowest=True)
 
 # # Scatter plot for the number of reviews vs binned playtime at review
-# reviews_df = df.groupby('playtime_bins').size().reset_index(name='count')
-# reviews_df.plot(kind='bar', x='playtime_bins', y='count')
-# plt.title('Number of Reviews vs Binned Playtime at Review')
-# plt.show()
+reviews_df = df.groupby('Playtime_Bins').size().reset_index(name='count')
+reviews_df.plot(kind='barh', x='Playtime_Bins', y='count')
+plt.title('Number of Reviews vs Binned Playtime at Review')
+plt.show()
 
 # # Scatter plot for the proportion of reviews voted up vs binned playtime at review
-# votes_df = df.groupby('playtime_bins')[
-#     'voted_up'].mean().reset_index(name='mean')
-# votes_df.plot(kind='bar', x='playtime_bins', y='mean')
-# plt.title('Proportion of Reviews Voted Up vs Binned Playtime at Review')
-# plt.show()
+votes_df = df.groupby('Playtime_Bins')[
+    'Voted_Up'].mean().reset_index(name='mean')
+votes_df.plot(kind='barh', x='Playtime_Bins', y='mean')
+plt.title('Proportion of Reviews Voted Up vs Binned Playtime at Review')
+plt.show()
