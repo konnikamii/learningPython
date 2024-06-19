@@ -81,6 +81,10 @@ df1['Written_During_Early_Access_Numeric'] = df1['Written_During_Early_Access'].
 new_df = pd.concat([df, df1])
 
 # # # # ------------- Summarizing the data ------------- # # # #
+average_playtime_ea_full = format_time(df_ea_full['Playtime_at_Review'].mean())
+positive_review_proportion_ea_full = df_ea_full['Voted_Up'].mean()
+early_access_review_proportion_ea_full = df_ea_full['Written_During_Early_Access'].mean(
+)
 average_playtime_ea = format_time(df['Playtime_at_Review'].mean())
 positive_review_proportion_ea = df['Voted_Up'].mean()
 early_access_review_proportion_ea = df['Written_During_Early_Access'].mean()
@@ -88,33 +92,42 @@ average_playtime_beta = format_time(df1['Playtime_at_Review'].mean())
 positive_review_proportion_beta = df1['Voted_Up'].mean()
 early_access_review_proportion_beta = df1['Written_During_Early_Access'].mean()
 print(f'Average Playtime: EA {
-      average_playtime_ea} vs Beta {average_playtime_beta}')
+      average_playtime_ea} vs EA_full {average_playtime_ea_full}vs Beta {average_playtime_beta}')
 print(f'Positive Reviews: EA {
-      round(positive_review_proportion_ea, 4)*100}% vs Beta {round(positive_review_proportion_beta, 4)*100}%')
+      round(positive_review_proportion_ea, 4)*100}% vs EA_full {round(positive_review_proportion_ea_full, 4)*100}% vs Beta {round(positive_review_proportion_beta, 4)*100}%')
 print(f'Reviews Written During Early Access: EA {
-      round(early_access_review_proportion_ea, 4)*100}% vs Beta {round(early_access_review_proportion_beta, 4)*100}%')
+      round(early_access_review_proportion_ea, 4)*100}% vs EA_full {round(early_access_review_proportion_ea_full, 4)*100}% vs Beta {round(early_access_review_proportion_beta, 4)*100}%')
 
+received_for_free_counts_ea_full = df_ea_full['Received_for_Free'].value_counts(
+)
 received_for_free_counts_ea = df['Received_for_Free'].value_counts()
 received_for_free_counts_beta = df1['Received_for_Free'].value_counts()
-prop1 = received_for_free_counts_ea.iloc[1]/received_for_free_counts_ea.iloc[0]
+prop0 = received_for_free_counts_ea.iloc[1]/received_for_free_counts_ea.iloc[0]
+prop1 = received_for_free_counts_ea_full.iloc[1] / \
+    received_for_free_counts_ea_full.iloc[0]
 prop2 = received_for_free_counts_beta.iloc[1] / \
     received_for_free_counts_beta.iloc[0]
 print(f'Reviews that received the game for Free: EA {
-      round(prop1, 4)*100}% vs Beta {round(prop2, 4)*100}%')
+      round(prop0, 4)*100}% vs EA_full {round(prop1, 4)*100}% vs Beta {round(prop2, 4)*100}%')
 
 
+df_free_ea_full = df_ea_full[df_ea_full['Received_for_Free'] == True]
 df_free_ea = df[df['Received_for_Free'] == True]
 df_free_beta = df1[df1['Received_for_Free'] == True]
+df_not_free_ea_full = df_ea_full[df_ea_full['Received_for_Free'] == False]
 df_not_free_ea = df[df['Received_for_Free'] == False]
 df_not_free_beta = df1[df1['Received_for_Free'] == False]
+positive_review_proportion_free_ea_full = df_free_ea_full['Voted_Up'].mean()
 positive_review_proportion_free_ea = df_free_ea['Voted_Up'].mean()
 positive_review_proportion_free_beta = df_free_beta['Voted_Up'].mean()
+positive_review_proportion_not_free_ea_full = df_not_free_ea_full['Voted_Up'].mean(
+)
 positive_review_proportion_not_free_ea = df_not_free_ea['Voted_Up'].mean()
 positive_review_proportion_not_free_beta = df_not_free_beta['Voted_Up'].mean()
 print(f'Positive Reviews (Received for Free): EA {round(
-    positive_review_proportion_free_ea, 4)*100}% vs Beta {round(positive_review_proportion_free_beta, 4)*100}%')
+    positive_review_proportion_free_ea, 4)*100}% vs EA_full {round(positive_review_proportion_free_ea_full, 4)*100}% vs Beta {round(positive_review_proportion_free_beta, 4)*100}%')
 print(f'Positive Reviews (Not Received for Free): EA {round(
-    positive_review_proportion_not_free_ea, 4)*100}% vs Beta {round(positive_review_proportion_not_free_beta, 4)*100}%')
+    positive_review_proportion_not_free_ea, 4)*100}% vs EA_full {round(positive_review_proportion_not_free_ea_full, 4)*100}% vs Beta {round(positive_review_proportion_not_free_beta, 4)*100}%')
 
 
 # region ANALISYS
