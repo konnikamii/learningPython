@@ -53,7 +53,7 @@ def format_time(minutes):
 
 # change later
 df_ea_full = pd.read_json(f'reviewsEA.json', lines=True)
-df = pd.read_json(f'reviewsEAsample3.json', lines=True)
+df = pd.read_json(f'reviewsEAsample2.json', lines=True)
 df1 = pd.read_json(f'reviewsBeta.json', lines=True)
 df_ea_full.columns = [col.replace(' ', '_') for col in df_ea_full.columns]
 df.columns = [col.replace(' ', '_') for col in df.columns]
@@ -79,6 +79,23 @@ df['Written_During_Early_Access_Numeric'] = df['Written_During_Early_Access'].ma
 df1['Written_During_Early_Access_Numeric'] = df1['Written_During_Early_Access'].map({
                                                                                     False: 0, True: 1})
 new_df = pd.concat([df, df1])
+
+# add review scores
+df_ea_full_game = pd.read_json('gamesEA.json', lines=True)
+df_game = pd.read_json('gamesEAsample2.json', lines=True)
+df1_game = pd.read_json('gamesBeta.json', lines=True)
+df_ea_full_game.columns = [col.replace(' ', '_')
+                           for col in df_ea_full_game.columns]
+df_game.columns = [col.replace(' ', '_')
+                   for col in df_game.columns]
+df1_game.columns = [col.replace(' ', '_')
+                    for col in df1_game.columns]
+df_ea_full_game = df_ea_full_game[['ID', 'Review_Summary_Score']]
+df_game = df_game[['ID', 'Review_Summary_Score']]
+df1_game = df1_game[['ID', 'Review_Summary_Score']]
+df_ea_full = pd.merge(df_ea_full, df_ea_full_game, on='ID', how='left')
+df = pd.merge(df, df_game, on='ID', how='left')
+df1 = pd.merge(df1, df1_game, on='ID', how='left')
 
 # # # # ------------- Summarizing the data ------------- # # # #
 average_playtime_ea_full = format_time(df_ea_full['Playtime_at_Review'].mean())
@@ -128,7 +145,6 @@ print(f'Positive Reviews (Received for Free): EA {round(
     positive_review_proportion_free_ea, 4)*100}% vs EA_full {round(positive_review_proportion_free_ea_full, 4)*100}% vs Beta {round(positive_review_proportion_free_beta, 4)*100}%')
 print(f'Positive Reviews (Not Received for Free): EA {round(
     positive_review_proportion_not_free_ea, 4)*100}% vs EA_full {round(positive_review_proportion_not_free_ea_full, 4)*100}% vs Beta {round(positive_review_proportion_not_free_beta, 4)*100}%')
-
 
 # region ANALISYS
 # # # # # # # # # # # # # # # # # # # # # # ANALISYS # # # # # # # # # # # # # # # # # # # # # #
@@ -214,23 +230,23 @@ model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
 
-X = sm.add_constant(df_ea_full.dropna(subset=['Voted_Up_Numeric'])[
+X = sm.add_constant(df_ea_full.dropna(subset=['Review_Summary_Score'])[
                     ['Playtime_at_Review', 'Received_for_Free_Numeric']])
-Y = df_ea_full.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+Y = df_ea_full.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
 model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
 
-X = sm.add_constant(df.dropna(subset=['Voted_Up_Numeric'])[
+X = sm.add_constant(df.dropna(subset=['Review_Summary_Score'])[
                     ['Playtime_at_Review', 'Received_for_Free_Numeric']])
-Y = df.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+Y = df.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
 model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
 
-X = sm.add_constant(df1.dropna(subset=['Voted_Up_Numeric'])[
-                    ['Playtime_at_Review', 'Received_for_Free_Numeric', 'Written_During_Early_Access_Numeric']])
-Y = df1.dropna(subset=['Voted_Up_Numeric'])['Voted_Up_Numeric']
+X = sm.add_constant(df1.dropna(subset=['Review_Summary_Score'])[
+                    ['Playtime_at_Review', 'Received_for_Free_Numeric']])
+Y = df1.dropna(subset=['Review_Summary_Score'])['Review_Summary_Score']
 model = sm.OLS(Y, X).fit()
 print(f"Review Score:")
 print(model.summary())
@@ -251,43 +267,59 @@ print(model.summary())
 # Written during EA - not significant
 
 
+sys.exit()
 # # ------------------------- Time Series -> # of Reviews, Avg Playtime, Voted Up
+df_ea_full['Timestamp_Created'] = pd.to_datetime(
+    df_ea_full['Timestamp_Created'])
 df['Timestamp_Created'] = pd.to_datetime(df['Timestamp_Created'])
-df.set_index('Timestamp_Created', inplace=True)
+df1['Timestamp_Created'] = pd.to_datetime(df1['Timestamp_Created'])
+fig, ax = plt.subplots(figsize=(7, 4))
+df_ea_full.set_index('Timestamp_Created', inplace=True)
 
 # Time series plot for the number of reviews
-df.resample('ME').size().plot()
-plt.title('Number of Reviews Over Time')
+df_ea_full.resample('ME').size().plot(ax=ax)
+plt.title('Number of Reviews Over Time EA full')
+plt.ylabel('Number of Reviews')
+plt.xlabel('Year')
 plt.show()
 
 # # Time series plot for the average playtime at review
-df.resample('ME')['Playtime_at_Review'].mean().plot()
+fig, ax = plt.subplots(figsize=(7, 4))
+df_ea_full.resample('ME')['Playtime_at_Review'].mean().plot(ax=ax)
 plt.title('Average Playtime at Review Over Time')
+plt.ylabel('Playtime')
+plt.xlabel('Year')
 plt.show()
 
 # # Time series plot for the proportion of reviews voted up
-df.resample('ME')['Voted_Up'].mean().plot()
+fig, ax = plt.subplots(figsize=(7, 4))
+df_ea_full.resample('ME')['Voted_Up'].mean().plot(ax=ax)
 plt.title('Proportion of Reviews Voted Up Over Time')
+plt.ylabel('Positive Reviews Proportion')
+plt.xlabel('Year')
 plt.show()
 
 # # ------------------------- Play Time -> # of Reviews, Voted Up
 # # Define the bin edges
 bins = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000,
-        8000, 9000, 10000, df['Playtime_at_Review'].max()]
+        8000, 9000, 10000, df_ea_full['Playtime_at_Review'].max()]
 
 # # Create the bins
-df['Playtime_Bins'] = pd.cut(
-    df['Playtime_at_Review'], bins, include_lowest=True)
+df_ea_full['Playtime_Bins'] = pd.cut(
+    df_ea_full['Playtime_at_Review'], bins, include_lowest=True)
 
 # # Scatter plot for the number of reviews vs binned playtime at review
-reviews_df = df.groupby('Playtime_Bins').size().reset_index(name='count')
-reviews_df.plot(kind='barh', x='Playtime_Bins', y='count')
+fig, ax = plt.subplots(figsize=(7, 4))
+reviews_df = df_ea_full.groupby(
+    'Playtime_Bins').size().reset_index(name='count')
+reviews_df.plot(ax=ax, kind='barh', x='Playtime_Bins', y='count')
 plt.title('Number of Reviews vs Binned Playtime at Review')
 plt.show()
 
 # # Scatter plot for the proportion of reviews voted up vs binned playtime at review
-votes_df = df.groupby('Playtime_Bins')[
+fig, ax = plt.subplots(figsize=(7, 4))
+votes_df = df_ea_full.groupby('Playtime_Bins')[
     'Voted_Up'].mean().reset_index(name='mean')
-votes_df.plot(kind='barh', x='Playtime_Bins', y='mean')
+votes_df.plot(ax=ax, kind='barh', x='Playtime_Bins', y='mean')
 plt.title('Proportion of Reviews Voted Up vs Binned Playtime at Review')
 plt.show()
